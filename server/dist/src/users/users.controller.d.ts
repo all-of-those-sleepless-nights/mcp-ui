@@ -5,32 +5,144 @@ export declare class UsersController {
     private readonly usersService;
     constructor(usersService: UsersService);
     create(dto: CreateUserDto): Promise<{
-        email: string;
-        name: string | null;
-        id: string;
+        bookings: {
+            proId: number;
+            serviceId: number;
+            userId: number | null;
+            start: Date;
+            end: Date;
+            status: string;
+            priceEstimate: number;
+            address: import("@prisma/client/runtime/library").JsonValue;
+            instructions: string | null;
+            quoteId: string | null;
+            rating: number | null;
+            reviewText: string | null;
+            createdAt: Date;
+            updatedAt: Date;
+            id: number;
+        }[];
+        reviews: {
+            review: string | null;
+            proId: number;
+            userId: number | null;
+            rating: number;
+            createdAt: Date;
+            updatedAt: Date;
+            id: number;
+            bookingId: number | null;
+        }[];
+    } & {
         createdAt: Date;
         updatedAt: Date;
+        id: number;
+        name: string;
+        email: string;
     }>;
-    findAll(): Promise<{
-        email: string;
-        name: string | null;
-        id: string;
+    findAll(): Promise<({
+        bookings: {
+            proId: number;
+            serviceId: number;
+            userId: number | null;
+            start: Date;
+            end: Date;
+            status: string;
+            priceEstimate: number;
+            address: import("@prisma/client/runtime/library").JsonValue;
+            instructions: string | null;
+            quoteId: string | null;
+            rating: number | null;
+            reviewText: string | null;
+            createdAt: Date;
+            updatedAt: Date;
+            id: number;
+        }[];
+        reviews: {
+            review: string | null;
+            proId: number;
+            userId: number | null;
+            rating: number;
+            createdAt: Date;
+            updatedAt: Date;
+            id: number;
+            bookingId: number | null;
+        }[];
+    } & {
         createdAt: Date;
         updatedAt: Date;
-    }[]>;
-    findOne(id: string): Promise<{
+        id: number;
+        name: string;
         email: string;
-        name: string | null;
-        id: string;
+    })[]>;
+    findOne(id: number): Promise<{
+        bookings: {
+            proId: number;
+            serviceId: number;
+            userId: number | null;
+            start: Date;
+            end: Date;
+            status: string;
+            priceEstimate: number;
+            address: import("@prisma/client/runtime/library").JsonValue;
+            instructions: string | null;
+            quoteId: string | null;
+            rating: number | null;
+            reviewText: string | null;
+            createdAt: Date;
+            updatedAt: Date;
+            id: number;
+        }[];
+        reviews: {
+            review: string | null;
+            proId: number;
+            userId: number | null;
+            rating: number;
+            createdAt: Date;
+            updatedAt: Date;
+            id: number;
+            bookingId: number | null;
+        }[];
+    } & {
         createdAt: Date;
         updatedAt: Date;
+        id: number;
+        name: string;
+        email: string;
     }>;
-    update(id: string, dto: UpdateUserDto): Promise<{
-        email: string;
-        name: string | null;
-        id: string;
+    update(id: number, dto: UpdateUserDto): Promise<{
+        bookings: {
+            proId: number;
+            serviceId: number;
+            userId: number | null;
+            start: Date;
+            end: Date;
+            status: string;
+            priceEstimate: number;
+            address: import("@prisma/client/runtime/library").JsonValue;
+            instructions: string | null;
+            quoteId: string | null;
+            rating: number | null;
+            reviewText: string | null;
+            createdAt: Date;
+            updatedAt: Date;
+            id: number;
+        }[];
+        reviews: {
+            review: string | null;
+            proId: number;
+            userId: number | null;
+            rating: number;
+            createdAt: Date;
+            updatedAt: Date;
+            id: number;
+            bookingId: number | null;
+        }[];
+    } & {
         createdAt: Date;
         updatedAt: Date;
+        id: number;
+        name: string;
+        email: string;
     }>;
-    remove(id: string): Promise<void>;
+    remove(id: number): Promise<void>;
 }

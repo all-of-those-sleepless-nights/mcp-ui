@@ -8,9 +8,148 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
-  email     String   @unique
-  name      String?
-  updatedAt DateTime @updatedAt
+  id        Int       @id @default(autoincrement())
+  name      String
+  email     String    @unique
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  bookings Booking[]
+  reviews  Review[]
+}
+
+model Service {
+  id                 Int             @id @default(autoincrement())
+  slug               String          @unique
+  title              String
+  description        String?
+  defaultPriceLow    Int
+  defaultPriceHigh   Int
+  defaultRadiusKm    Int?
+  defaultWorkingDays Int[]
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  pros     Pro[]
+  extras   ServiceExtra[]
+  bookings Booking[]
+}
+
+model ServiceExtra {
+  id        Int     @id @default(autoincrement())
+  serviceId Int
+  name      String
+  price     Int
+
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@unique([serviceId, name])
+}
+
+model Pro {
+  id              Int             @id @default(autoincrement())
+  slug            String          @unique
+  serviceId       Int
+  name            String
+  image           String
+  imageAlt        String
+  rating          Float
+  reviewsCount    Int
+  priceFrom       Int
+  currency        String
+  latitude        Float
+  longitude       Float
+  serviceRadiusKm Int
+  workingDays     Int[]
+  baseQuoteLow    Int
+  baseQuoteHigh   Int
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  service     Service        @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  timeWindows ProTimeWindow[]
+  badges      ProBadge[]
+  extras      ProExtra[]
+  bookings    Booking[]
+  reviews     Review[]
+
+  @@index([serviceId])
+}
+
+model ProTimeWindow {
+  id    Int    @id @default(autoincrement())
+  proId Int
+  start String
+  end   String
+
+  pro Pro @relation(fields: [proId], references: [id], onDelete: Cascade)
+
+  @@index([proId])
+}
+
+model ProBadge {
+  id    Int    @id @default(autoincrement())
+  proId Int
+  label String
+
+  pro Pro @relation(fields: [proId], references: [id], onDelete: Cascade)
+
+  @@unique([proId, label])
+  @@index([proId])
+}
+
+model ProExtra {
+  id    Int    @id @default(autoincrement())
+  proId Int
+  name  String
+  price Int
+
+  pro Pro @relation(fields: [proId], references: [id], onDelete: Cascade)
+
+  @@unique([proId, name])
+  @@index([proId])
+}
+
+model Booking {
+  id            Int       @id @default(autoincrement())
+  proId         Int
+  serviceId     Int
+  userId        Int?
+  start         DateTime
+  end           DateTime
+  status        String
+  priceEstimate Int
+  address       Json
+  instructions  String?
+  quoteId       String?
+  rating        Float?
+  reviewText    String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  pro     Pro     @relation(fields: [proId], references: [id], onDelete: Cascade)
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  user    User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  review  Review?
+
+  @@index([proId, serviceId, userId, start])
+}
+
+model Review {
+  id        Int       @id @default(autoincrement())
+  proId     Int
+  userId    Int?
+  bookingId Int?      @unique
+  rating    Float
+  review    String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  pro     Pro      @relation(fields: [proId], references: [id], onDelete: Cascade)
+  user    User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  booking Booking? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+
+  @@index([proId])
+  @@index([userId])
+  @@index([bookingId])
 }

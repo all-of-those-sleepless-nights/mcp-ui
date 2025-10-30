@@ -14,18 +14,30 @@ export class UsersService {
         email: dto.email,
         name: dto.name,
       },
+      include: {
+        bookings: true,
+        reviews: true,
+      },
     });
   }
 
   async findAll() {
     return this.prismaService.prisma.user.findMany({
       orderBy: { createdAt: 'desc' },
+      include: {
+        bookings: true,
+        reviews: true,
+      },
     });
   }
 
-  async findOne(id: string) {
+  async findOne(id: number) {
     const user = await this.prismaService.prisma.user.findUnique({
       where: { id },
+      include: {
+        bookings: true,
+        reviews: true,
+      },
     });
 
     if (!user) {
@@ -35,7 +47,7 @@ export class UsersService {
     return user;
   }
 
-  async update(id: string, dto: UpdateUserDto) {
+  async update(id: number, dto: UpdateUserDto) {
     await this.ensureExists(id);
 
     return this.prismaService.prisma.user.update({
@@ -44,10 +56,14 @@ export class UsersService {
         email: dto.email,
         name: dto.name,
       },
+      include: {
+        bookings: true,
+        reviews: true,
+      },
     });
   }
 
-  async remove(id: string) {
+  async remove(id: number) {
     await this.ensureExists(id);
 
     await this.prismaService.prisma.user.delete({
@@ -55,7 +71,7 @@ export class UsersService {
     });
   }
 
-  private async ensureExists(id: string) {
+  private async ensureExists(id: number) {
     const exists = await this.prismaService.prisma.user.findUnique({
       where: { id },
       select: { id: true },

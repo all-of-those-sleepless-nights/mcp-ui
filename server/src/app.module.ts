@@ -3,7 +3,11 @@ import { ConfigModule } from '@nestjs/config';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { BookingsModule } from './bookings/bookings.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { ProsModule } from './pros/pros.module';
+import { ReviewsModule } from './reviews/reviews.module';
+import { ServicesModule } from './services/services.module';
 import { UsersModule } from './users/users.module';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
@@ -12,6 +16,10 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
+    ServicesModule,
+    ProsModule,
+    BookingsModule,
+    ReviewsModule,
     UsersModule,
   ],
   controllers: [AppController],

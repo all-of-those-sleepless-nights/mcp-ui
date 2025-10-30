@@ -22,16 +22,28 @@ let UsersService = class UsersService {
                 email: dto.email,
                 name: dto.name,
             },
+            include: {
+                bookings: true,
+                reviews: true,
+            },
         });
     }
     async findAll() {
         return this.prismaService.prisma.user.findMany({
             orderBy: { createdAt: 'desc' },
+            include: {
+                bookings: true,
+                reviews: true,
+            },
         });
     }
     async findOne(id) {
         const user = await this.prismaService.prisma.user.findUnique({
             where: { id },
+            include: {
+                bookings: true,
+                reviews: true,
+            },
         });
         if (!user) {
             throw new common_1.NotFoundException(`User ${id} not found`);
@@ -45,6 +57,10 @@ let UsersService = class UsersService {
             data: {
                 email: dto.email,
                 name: dto.name,
+            },
+            include: {
+                bookings: true,
+                reviews: true,
             },
         });
     }

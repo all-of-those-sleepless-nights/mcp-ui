@@ -1,0 +1,276 @@
+import { BookingsService } from './bookings.service';
+import { CreateBookingDto } from './dto/create-booking.dto';
+import { UpdateBookingDto } from './dto/update-booking.dto';
+export declare class BookingsController {
+    private readonly bookingsService;
+    constructor(bookingsService: BookingsService);
+    create(dto: CreateBookingDto): Promise<{
+        user: {
+            createdAt: Date;
+            updatedAt: Date;
+            id: number;
+            name: string;
+            email: string;
+        };
+        service: {
+            createdAt: Date;
+            updatedAt: Date;
+            id: number;
+            slug: string;
+            title: string;
+            description: string | null;
+            defaultPriceLow: number;
+            defaultPriceHigh: number;
+            defaultRadiusKm: number | null;
+            defaultWorkingDays: number[];
+        };
+        pro: {
+            serviceId: number;
+            rating: number;
+            createdAt: Date;
+            updatedAt: Date;
+            id: number;
+            name: string;
+            slug: string;
+            image: string;
+            imageAlt: string;
+            reviewsCount: number;
+            priceFrom: number;
+            currency: string;
+            latitude: number;
+            longitude: number;
+            serviceRadiusKm: number;
+            workingDays: number[];
+            baseQuoteLow: number;
+            baseQuoteHigh: number;
+        };
+        review: {
+            review: string | null;
+            proId: number;
+            userId: number | null;
+            rating: number;
+            createdAt: Date;
+            updatedAt: Date;
+            id: number;
+            bookingId: number | null;
+        };
+    } & {
+        proId: number;
+        serviceId: number;
+        userId: number | null;
+        start: Date;
+        end: Date;
+        status: string;
+        priceEstimate: number;
+        address: import("@prisma/client/runtime/library").JsonValue;
+        instructions: string | null;
+        quoteId: string | null;
+        rating: number | null;
+        reviewText: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        id: number;
+    }>;
+    findAll(): Promise<({
+        user: {
+            createdAt: Date;
+            updatedAt: Date;
+            id: number;
+            name: string;
+            email: string;
+        };
+        service: {
+            createdAt: Date;
+            updatedAt: Date;
+            id: number;
+            slug: string;
+            title: string;
+            description: string | null;
+            defaultPriceLow: number;
+            defaultPriceHigh: number;
+            defaultRadiusKm: number | null;
+            defaultWorkingDays: number[];
+        };
+        pro: {
+            serviceId: number;
+            rating: number;
+            createdAt: Date;
+            updatedAt: Date;
+            id: number;
+            name: string;
+            slug: string;
+            image: string;
+            imageAlt: string;
+            reviewsCount: number;
+            priceFrom: number;
+            currency: string;
+            latitude: number;
+            longitude: number;
+            serviceRadiusKm: number;
+            workingDays: number[];
+            baseQuoteLow: number;
+            baseQuoteHigh: number;
+        };
+        review: {
+            review: string | null;
+            proId: number;
+            userId: number | null;
+            rating: number;
+            createdAt: Date;
+            updatedAt: Date;
+            id: number;
+            bookingId: number | null;
+        };
+    } & {
+        proId: number;
+        serviceId: number;
+        userId: number | null;
+        start: Date;
+        end: Date;
+        status: string;
+        priceEstimate: number;
+        address: import("@prisma/client/runtime/library").JsonValue;
+        instructions: string | null;
+        quoteId: string | null;
+        rating: number | null;
+        reviewText: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        id: number;
+    })[]>;
+    findOne(id: number): Promise<{
+        user: {
+            createdAt: Date;
+            updatedAt: Date;
+            id: number;
+            name: string;
+            email: string;
+        };
+        service: {
+            createdAt: Date;
+            updatedAt: Date;
+            id: number;
+            slug: string;
+            title: string;
+            description: string | null;
+            defaultPriceLow: number;
+            defaultPriceHigh: number;
+            defaultRadiusKm: number | null;
+            defaultWorkingDays: number[];
+        };
+        pro: {
+            serviceId: number;
+            rating: number;
+            createdAt: Date;
+            updatedAt: Date;
+            id: number;
+            name: string;
+            slug: string;
+            image: string;
+            imageAlt: string;
+            reviewsCount: number;
+            priceFrom: number;
+            currency: string;
+            latitude: number;
+            longitude: number;
+            serviceRadiusKm: number;
+            workingDays: number[];
+            baseQuoteLow: number;
+            baseQuoteHigh: number;
+        };
+        review: {
+            review: string | null;
+            proId: number;
+            userId: number | null;
+            rating: number;
+            createdAt: Date;
+            updatedAt: Date;
+            id: number;
+            bookingId: number | null;
+        };
+    } & {
+        proId: number;
+        serviceId: number;
+        userId: number | null;
+        start: Date;
+        end: Date;
+        status: string;
+        priceEstimate: number;
+        address: import("@prisma/client/runtime/library").JsonValue;
+        instructions: string | null;
+        quoteId: string | null;
+        rating: number | null;
+        reviewText: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        id: number;
+    }>;
+    update(id: number, dto: UpdateBookingDto): Promise<{
+        user: {
+            createdAt: Date;
+            updatedAt: Date;
+            id: number;
+            name: string;
+            email: string;
+        };
+        service: {
+            createdAt: Date;
+            updatedAt: Date;
+            id: number;
+            slug: string;
+            title: string;
+            description: string | null;
+            defaultPriceLow: number;
+            defaultPriceHigh: number;
+            defaultRadiusKm: number | null;
+            defaultWorkingDays: number[];
+        };
+        pro: {
+            serviceId: number;
+            rating: number;
+            createdAt: Date;
+            updatedAt: Date;
+            id: number;
+            name: string;
+            slug: string;
+            image: string;
+            imageAlt: string;
+            reviewsCount: number;
+            priceFrom: number;
+            currency: string;
+            latitude: number;
+            longitude: number;
+            serviceRadiusKm: number;
+            workingDays: number[];
+            baseQuoteLow: number;
+            baseQuoteHigh: number;
+        };
+        review: {
+            review: string | null;
+            proId: number;
+            userId: number | null;
+            rating: number;
+            createdAt: Date;
+            updatedAt: Date;
+            id: number;
+            bookingId: number | null;
+        };
+    } & {
+        proId: number;
+        serviceId: number;
+        userId: number | null;
+        start: Date;
+        end: Date;
+        status: string;
+        priceEstimate: number;
+        address: import("@prisma/client/runtime/library").JsonValue;
+        instructions: string | null;
+        quoteId: string | null;
+        rating: number | null;
+        reviewText: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        id: number;
+    }>;
+    remove(id: number): Promise<void>;
+}
