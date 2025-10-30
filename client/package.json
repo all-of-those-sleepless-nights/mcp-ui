@@ -1,0 +1,13 @@
+{
+  "name": "ui-mcp-client",
+  "private": true,
+  "type": "module",
+  "version": "0.0.1",
+  "scripts": {
+    "build": "node scripts/build.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0",
+    "typescript": "^5.1.3"
+  }
+}

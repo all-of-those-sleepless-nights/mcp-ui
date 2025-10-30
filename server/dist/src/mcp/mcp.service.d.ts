@@ -1,0 +1,31 @@
+import { OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { Request, Response } from 'express';
+export declare class McpService implements OnModuleInit, OnModuleDestroy {
+    private readonly logger;
+    private ServerCtor?;
+    private SseCtor?;
+    private typesModule?;
+    private server?;
+    private readonly sessions;
+    private blackTemplate?;
+    private blackScript?;
+    private currentTitle;
+    onModuleInit(): Promise<void>;
+    onModuleDestroy(): Promise<void>;
+    handleSse(_req: Request, res: Response): Promise<void>;
+    handlePost(sessionId: string | undefined, req: Request, res: Response): Promise<void>;
+    private extractBodyFromRequest;
+    handleOptions(res: Response): void;
+    private loadSdk;
+    private loadTemplate;
+    private registerHandlers;
+    private describeTool;
+    private describeResource;
+    private describeResourceTemplate;
+    private extractTitle;
+    private renderBlackHtml;
+    private buildToolResponse;
+    private ensureServer;
+    private ensureSseCtor;
+    private ensureTypesModule;
+}
