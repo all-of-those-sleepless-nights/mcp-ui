@@ -21,22 +21,22 @@ export type VerifiedGoogleAccessToken = {
 };
 
 const TOKENINFO_ENDPOINT = 'https://oauth2.googleapis.com/tokeninfo';
-const DEFAULT_SCOPE_STRING = 'openid https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile';
+const DEFAULT_SCOPE_STRING =
+  'openid https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile';
 
-export const GOOGLE_OAUTH_CLIENT_ID =
-  process.env.GOOGLE_OAUTH_CLIENT_ID ??
-  '730815327873-3g19j4b2nhhrj2o9clrfuli5nvbop5r2.apps.googleusercontent.com';
+export const GOOGLE_OAUTH_CLIENT_ID = process.env.GOOGLE_OAUTH_CLIENT_ID ?? '';
 
 export const GOOGLE_OAUTH_CLIENT_SECRET =
-  process.env.GOOGLE_OAUTH_CLIENT_SECRET ??
-  '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';
+  process.env.GOOGLE_OAUTH_CLIENT_SECRET ?? '';
 
 export const GOOGLE_TOKEN_ENDPOINT_AUTH_METHOD = 'client_secret_post';
-export const GOOGLE_AUTHORIZATION_ENDPOINT = 'https://accounts.google.com/o/oauth2/v2/auth';
+export const GOOGLE_AUTHORIZATION_ENDPOINT =
+  'https://accounts.google.com/o/oauth2/v2/auth';
 export const GOOGLE_TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token';
 export const GOOGLE_JWKS_URI = 'https://www.googleapis.com/oauth2/v3/certs';
 export const GOOGLE_OPENID_ISSUER = 'https://accounts.google.com';
-export const GOOGLE_USERINFO_ENDPOINT = 'https://openidconnect.googleapis.com/v1/userinfo';
+export const GOOGLE_USERINFO_ENDPOINT =
+  'https://openidconnect.googleapis.com/v1/userinfo';
 
 const SCOPE_EQUIVALENTS: Record<string, readonly string[]> = {
   openid: ['openid'],
@@ -53,7 +53,9 @@ const canonicalizeScope = (scope: string): string => {
   return scope;
 };
 
-const requiredScopes = (process.env.GOOGLE_OAUTH_REQUIRED_SCOPES ?? DEFAULT_SCOPE_STRING)
+const requiredScopes = (
+  process.env.GOOGLE_OAUTH_REQUIRED_SCOPES ?? DEFAULT_SCOPE_STRING
+)
   .split(/\s+/)
   .map((scope) => scope.trim())
   .filter((scope) => scope.length > 0);
@@ -75,7 +77,9 @@ const allowedClientIds = (process.env.GOOGLE_OAUTH_ALLOWED_CLIENT_IDS ?? '')
 const tokenCache = new Map<string, VerifiedGoogleAccessToken>();
 
 const minimumCacheSlackMs = 5_000;
-const requestTimeoutMs = Number(process.env.GOOGLE_OAUTH_TOKENINFO_TIMEOUT_MS ?? '5000');
+const requestTimeoutMs = Number(
+  process.env.GOOGLE_OAUTH_TOKENINFO_TIMEOUT_MS ?? '5000',
+);
 
 function hasRequiredScopes(scopes: string[]): boolean {
   if (normalizedRequiredScopes.length === 0) return true;
@@ -93,7 +97,10 @@ function isClientAllowed(clientId?: string): boolean {
   return allowedClientIds.includes(clientId);
 }
 
-async function fetchTokenInfo(token: string, signal: AbortSignal): Promise<TokenInfoResponse | null> {
+async function fetchTokenInfo(
+  token: string,
+  signal: AbortSignal,
+): Promise<TokenInfoResponse | null> {
   try {
     const url = new URL(TOKENINFO_ENDPOINT);
     url.searchParams.set('access_token', token);
@@ -109,14 +116,19 @@ async function fetchTokenInfo(token: string, signal: AbortSignal): Promise<Token
   }
 }
 
-export async function verifyGoogleAccessToken(token: string): Promise<VerifiedGoogleAccessToken | null> {
+export async function verifyGoogleAccessToken(
+  token: string,
+): Promise<VerifiedGoogleAccessToken | null> {
   const cached = tokenCache.get(token);
   if (cached && cached.expiresAt - Date.now() > minimumCacheSlackMs) {
     return cached;
   }
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort('timeout'), Math.max(requestTimeoutMs, 1000));
+  const timeoutId = setTimeout(
+    () => controller.abort('timeout'),
+    Math.max(requestTimeoutMs, 1000),
+  );
   try {
     const info = await fetchTokenInfo(token, controller.signal);
     if (!info) return null;
@@ -128,7 +140,10 @@ export async function verifyGoogleAccessToken(token: string): Promise<VerifiedGo
     const audience = typeof info.aud === 'string' ? info.aud : undefined;
     const authorizedParty = typeof info.azp === 'string' ? info.azp : undefined;
     if (!isAudienceAllowed(audience)) {
-      console.warn('[OAuth] Token audience not permitted:', { audience, allowedAudiences });
+      console.warn('[OAuth] Token audience not permitted:', {
+        audience,
+        allowedAudiences,
+      });
       return null;
     }
     if (!isClientAllowed(authorizedParty ?? audience)) {
@@ -152,7 +167,8 @@ export async function verifyGoogleAccessToken(token: string): Promise<VerifiedGo
 
     if (!hasRequiredScopes(scopes)) {
       const missingScopes = normalizedRequiredScopes.filter(
-        (scope) => !scopes.map((value) => canonicalizeScope(value)).includes(scope),
+        (scope) =>
+          !scopes.map((value) => canonicalizeScope(value)).includes(scope),
       );
       console.warn('[OAuth] Token missing required scopes:', {
         required: requiredScopes,
