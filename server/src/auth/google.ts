@@ -1,6 +1,7 @@
+import 'dotenv/config';
 import { URL } from 'node:url';
 
-export type TokenInfoResponse = {
+type TokenInfoResponse = {
   aud?: string;
   exp?: string;
   expires_in?: string;
@@ -24,19 +25,12 @@ const TOKENINFO_ENDPOINT = 'https://oauth2.googleapis.com/tokeninfo';
 const DEFAULT_SCOPE_STRING =
   'openid https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile';
 
-export const GOOGLE_OAUTH_CLIENT_ID = process.env.GOOGLE_OAUTH_CLIENT_ID ?? '';
+export const GOOGLE_OAUTH_CLIENT_ID = process.env.GOOGLE_OAUTH_CLIENT_ID;
 
 export const GOOGLE_OAUTH_CLIENT_SECRET =
-  process.env.GOOGLE_OAUTH_CLIENT_SECRET ?? '';
+  process.env.GOOGLE_OAUTH_CLIENT_SECRET;
 
 export const GOOGLE_TOKEN_ENDPOINT_AUTH_METHOD = 'client_secret_post';
-export const GOOGLE_AUTHORIZATION_ENDPOINT =
-  'https://accounts.google.com/o/oauth2/v2/auth';
-export const GOOGLE_TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token';
-export const GOOGLE_JWKS_URI = 'https://www.googleapis.com/oauth2/v3/certs';
-export const GOOGLE_OPENID_ISSUER = 'https://accounts.google.com';
-export const GOOGLE_USERINFO_ENDPOINT =
-  'https://openidconnect.googleapis.com/v1/userinfo';
 
 const SCOPE_EQUIVALENTS: Record<string, readonly string[]> = {
   openid: ['openid'],
@@ -197,7 +191,7 @@ export async function verifyGoogleAccessToken(
   }
 }
 
-export function clearTokenCache(): void {
+export function clearTokenCache() {
   tokenCache.clear();
 }
 
@@ -209,7 +203,7 @@ export function buildWwwAuthenticateHeader(
   metadataUrl: string,
   error?: string,
   description?: string,
-  realm = 'ui-mcp',
+  realm = 'homeflow-mcp',
 ): string {
   const parts = [`Bearer realm="${realm}"`];
   if (requiredScopes.length > 0) {
@@ -224,3 +218,11 @@ export function buildWwwAuthenticateHeader(
   }
   return parts.join(', ');
 }
+
+export const GOOGLE_OPENID_ISSUER = 'https://accounts.google.com';
+export const GOOGLE_AUTHORIZATION_ENDPOINT =
+  'https://accounts.google.com/o/oauth2/v2/auth';
+export const GOOGLE_TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token';
+export const GOOGLE_JWKS_URI = 'https://www.googleapis.com/oauth2/v3/certs';
+export const GOOGLE_USERINFO_ENDPOINT =
+  'https://openidconnect.googleapis.com/v1/userinfo';
