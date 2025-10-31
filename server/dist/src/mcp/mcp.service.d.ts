@@ -1,6 +1,11 @@
 import { OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { PrismaService } from '../prisma/prisma.service';
+import { OauthService } from '../auth/oauth.service';
+import { type VerifiedGoogleAccessToken } from '../auth/google';
 export declare class McpService implements OnModuleInit, OnModuleDestroy {
+    private readonly prismaService;
+    private readonly oauthService;
     private readonly logger;
     private ServerCtor?;
     private SseCtor?;
@@ -10,10 +15,16 @@ export declare class McpService implements OnModuleInit, OnModuleDestroy {
     private blackTemplate?;
     private blackScript?;
     private currentTitle;
+    private homeflowAdapter?;
+    private homeflowTools;
+    private homeflowToolNames;
+    private homeflowResources;
+    private homeflowResourceTemplates;
+    constructor(prismaService: PrismaService, oauthService: OauthService);
     onModuleInit(): Promise<void>;
     onModuleDestroy(): Promise<void>;
-    handleSse(_req: Request, res: Response): Promise<void>;
-    handlePost(sessionId: string | undefined, req: Request, res: Response): Promise<void>;
+    handleSse(_req: Request, res: Response, token: VerifiedGoogleAccessToken, metadataUrl: string): Promise<void>;
+    handlePost(sessionId: string | undefined, req: Request, res: Response, token: VerifiedGoogleAccessToken): Promise<void>;
     private extractBodyFromRequest;
     handleOptions(res: Response): void;
     private loadSdk;
@@ -25,6 +36,8 @@ export declare class McpService implements OnModuleInit, OnModuleDestroy {
     private extractTitle;
     private renderBlackHtml;
     private buildToolResponse;
+    private refreshGoogleAccount;
+    private refreshHomeflowMetadata;
     private ensureServer;
     private ensureSseCtor;
     private ensureTypesModule;

@@ -15,9 +15,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.McpController = void 0;
 const common_1 = require("@nestjs/common");
 const mcp_service_1 = require("./mcp.service");
+const oauth_service_1 = require("../auth/oauth.service");
 let McpController = class McpController {
-    constructor(mcpService) {
+    constructor(mcpService, oauthService) {
         this.mcpService = mcpService;
+        this.oauthService = oauthService;
     }
     handleRootOptions(res) {
         this.mcpService.handleOptions(res);
@@ -26,10 +28,16 @@ let McpController = class McpController {
         this.mcpService.handleOptions(res);
     }
     async openStream(req, res) {
-        await this.mcpService.handleSse(req, res);
+        const auth = await this.oauthService.requireAuth(req, res);
+        if (!auth)
+            return;
+        await this.mcpService.handleSse(req, res, auth.token, auth.metadataUrl);
     }
     async receiveMessage(sessionId, req, res) {
-        await this.mcpService.handlePost(sessionId, req, res);
+        const auth = await this.oauthService.requireAuth(req, res);
+        if (!auth)
+            return;
+        await this.mcpService.handlePost(sessionId, req, res, auth.token);
     }
 };
 exports.McpController = McpController;
@@ -66,6 +74,7 @@ __decorate([
 ], McpController.prototype, "receiveMessage", null);
 exports.McpController = McpController = __decorate([
     (0, common_1.Controller)('mcp'),
-    __metadata("design:paramtypes", [mcp_service_1.McpService])
+    __metadata("design:paramtypes", [mcp_service_1.McpService,
+        oauth_service_1.OauthService])
 ], McpController);
 //# sourceMappingURL=mcp.controller.js.map

@@ -10,11 +10,15 @@ import {
 import { Request, Response } from 'express';
 
 import { McpService } from './mcp.service';
+import { OauthService } from '../auth/oauth.service';
 import type { Request as RawRequest } from 'express';
 
 @Controller('mcp')
 export class McpController {
-  constructor(private readonly mcpService: McpService) {}
+  constructor(
+    private readonly mcpService: McpService,
+    private readonly oauthService: OauthService,
+  ) {}
 
   @Options()
   handleRootOptions(@Res() res: Response): void {
@@ -31,7 +35,9 @@ export class McpController {
     @Req() req: RawRequest,
     @Res() res: Response,
   ): Promise<void> {
-    await this.mcpService.handleSse(req, res);
+    const auth = await this.oauthService.requireAuth(req, res);
+    if (!auth) return;
+    await this.mcpService.handleSse(req, res, auth.token, auth.metadataUrl);
   }
 
   @Post('messages')
@@ -40,6 +46,8 @@ export class McpController {
     @Req() req: Request,
     @Res() res: Response,
   ): Promise<void> {
-    await this.mcpService.handlePost(sessionId, req, res);
+    const auth = await this.oauthService.requireAuth(req, res);
+    if (!auth) return;
+    await this.mcpService.handlePost(sessionId, req, res, auth.token);
   }
 }

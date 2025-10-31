@@ -31,6 +31,72 @@ export class ReviewsService {
     });
   }
 
+  async rateJob(dto: { jobId: number; rating: number; review?: string }) {
+    const prisma = this.prismaService.prisma;
+
+    const booking = await prisma.booking.findUnique({
+      where: { id: dto.jobId },
+    });
+    if (!booking) {
+      throw new NotFoundException(`Booking ${dto.jobId} not found`);
+    }
+
+    try {
+      await prisma.review.create({
+        data: {
+          proId: booking.proId,
+          bookingId: booking.id,
+          userId: booking.userId ?? undefined,
+          rating: dto.rating,
+          review: dto.review ?? null,
+        },
+      });
+    } catch (error) {
+      if ((error as any)?.code === 'P2002') {
+        await prisma.review.update({
+          where: { bookingId: booking.id },
+          data: {
+            rating: dto.rating,
+            review: dto.review ?? null,
+            updatedAt: new Date(),
+          },
+        });
+      } else {
+        throw error;
+      }
+    }
+
+    const updatedBooking = await prisma.booking.update({
+      where: { id: booking.id },
+      data: {
+        status: 'rated',
+        rating: dto.rating,
+        reviewText: dto.review ?? null,
+        updatedAt: new Date(),
+      },
+    });
+
+    await this.refreshProRatings(updatedBooking.proId);
+
+    return { success: true } as const;
+  }
+
+  private async refreshProRatings(proId: number): Promise<void> {
+    const prisma = this.prismaService.prisma;
+    const stats = await prisma.review.groupBy({
+      by: ['proId'],
+      where: { proId },
+      _count: { _all: true },
+      _avg: { rating: true },
+    });
+    if (!stats.length) return;
+    const { _count, _avg } = stats[0];
+    await prisma.pro.update({
+      where: { id: proId },
+      data: { reviewsCount: _count._all, rating: _avg.rating ?? 0 },
+    });
+  }
+
   async findAll() {
     return this.prismaService.prisma.review.findMany({
       include: this.defaultIncludes(),

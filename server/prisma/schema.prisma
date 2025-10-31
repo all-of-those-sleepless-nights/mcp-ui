@@ -33,6 +33,7 @@ model Service {
   pros     Pro[]
   extras   ServiceExtra[]
   bookings Booking[]
+  quotes   Quote[]
 }
 
 model ServiceExtra {
@@ -72,6 +73,7 @@ model Pro {
   extras      ProExtra[]
   bookings    Booking[]
   reviews     Review[]
+  quotes      Quote[]
 
   @@index([serviceId])
 }
@@ -115,13 +117,13 @@ model Booking {
   proId         Int
   serviceId     Int
   userId        Int?
+  quoteId       String?
   start         DateTime
   end           DateTime
   status        String
   priceEstimate Int
   address       Json
   instructions  String?
-  quoteId       String?
   rating        Float?
   reviewText    String?
   createdAt     DateTime  @default(now())
@@ -130,6 +132,7 @@ model Booking {
   pro     Pro     @relation(fields: [proId], references: [id], onDelete: Cascade)
   service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
   user    User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  quote   Quote?  @relation(fields: [quoteId], references: [id], onDelete: SetNull)
   review  Review?
 
   @@index([proId, serviceId, userId, start])
@@ -152,4 +155,25 @@ model Review {
   @@index([proId])
   @@index([userId])
   @@index([bookingId])
+}
+
+model Quote {
+  id                String   @id @default(cuid())
+  serviceId         Int
+  proId             Int?
+  estimateLow       Int
+  estimateHigh      Int
+  currency          String
+  expiresAt         DateTime
+  suggestedDateStart DateTime
+  suggestedDateEnd   DateTime
+  details           Json?
+  createdAt         DateTime @default(now())
+
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  pro     Pro?     @relation(fields: [proId], references: [id], onDelete: SetNull)
+  bookings Booking[]
+
+  @@index([serviceId])
+  @@index([proId])
 }

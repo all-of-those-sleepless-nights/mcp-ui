@@ -1,5 +1,6 @@
 import { CreateReviewDto } from './dto/create-review.dto';
 import { UpdateReviewDto } from './dto/update-review.dto';
+import { RateJobDto } from './dto/rate-job.dto';
 import { ReviewsService } from './reviews.service';
 export declare class ReviewsController {
     private readonly reviewsService;
@@ -58,6 +59,9 @@ export declare class ReviewsController {
         updatedAt: Date;
         id: number;
         bookingId: number | null;
+    }>;
+    rateJob(dto: RateJobDto): Promise<{
+        readonly success: true;
     }>;
     findAll(): Promise<({
         user: {

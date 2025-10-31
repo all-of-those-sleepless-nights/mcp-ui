@@ -5,6 +5,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { BookingsModule } from './bookings/bookings.module';
 import { McpModule } from './mcp/mcp.module';
+import { OauthModule } from './auth/oauth.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProsModule } from './pros/pros.module';
 import { ReviewsModule } from './reviews/reviews.module';
@@ -18,6 +19,7 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
     McpModule,
+    OauthModule,
     ServicesModule,
     ProsModule,
     BookingsModule,

@@ -35,6 +35,68 @@ let ReviewsService = class ReviewsService {
             include: this.defaultIncludes(),
         });
     }
+    async rateJob(dto) {
+        const prisma = this.prismaService.prisma;
+        const booking = await prisma.booking.findUnique({
+            where: { id: dto.jobId },
+        });
+        if (!booking) {
+            throw new common_1.NotFoundException(`Booking ${dto.jobId} not found`);
+        }
+        try {
+            await prisma.review.create({
+                data: {
+                    proId: booking.proId,
+                    bookingId: booking.id,
+                    userId: booking.userId ?? undefined,
+                    rating: dto.rating,
+                    review: dto.review ?? null,
+                },
+            });
+        }
+        catch (error) {
+            if (error?.code === 'P2002') {
+                await prisma.review.update({
+                    where: { bookingId: booking.id },
+                    data: {
+                        rating: dto.rating,
+                        review: dto.review ?? null,
+                        updatedAt: new Date(),
+                    },
+                });
+            }
+            else {
+                throw error;
+            }
+        }
+        const updatedBooking = await prisma.booking.update({
+            where: { id: booking.id },
+            data: {
+                status: 'rated',
+                rating: dto.rating,
+                reviewText: dto.review ?? null,
+                updatedAt: new Date(),
+            },
+        });
+        await this.refreshProRatings(updatedBooking.proId);
+        return { success: true };
+    }
+    async refreshProRatings(proId) {
+        const prisma = this.prismaService.prisma;
+        const stats = await prisma.review.groupBy({
+            by: ['proId'],
+            where: { proId },
+            _count: { _all: true },
+            _avg: { rating: true },
+        });
+        if (!stats.length)
+            return;
+        const { _count, _avg } = stats[0];
+        await prisma.pro.update({
+            where: { id: proId },
+            data: { reviewsCount: _count._all, rating: _avg.rating ?? 0 },
+        });
+    }
     async findAll() {
         return this.prismaService.prisma.review.findMany({
             include: this.defaultIncludes(),

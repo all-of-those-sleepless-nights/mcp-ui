@@ -8,6 +8,18 @@ import { Request, Response } from 'express';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
+import { PrismaService } from '../prisma/prisma.service';
+import { OauthService } from '../auth/oauth.service';
+import {
+  type VerifiedGoogleAccessToken,
+  GOOGLE_USERINFO_ENDPOINT,
+} from '../auth/google';
+import {
+  HomeflowMcpAdapter,
+  HOMEFLOW_WIDGET_META,
+  HOMEFLOW_TEMPLATE_URI,
+} from './homeflow';
+
 type McpServerConstructor =
   typeof import('@modelcontextprotocol/sdk/server/index.js').Server;
 type McpServerInstance = InstanceType<McpServerConstructor>;
@@ -37,6 +49,13 @@ type BlackWidgetConfig = {
   title: string;
 };
 
+type SessionEntry = {
+  transport: McpSseInstance;
+  subject: string;
+  metadataUrl: string;
+  token: VerifiedGoogleAccessToken;
+};
+
 const BLACK_WIDGET_ID = 'black-screen';
 const BLACK_TEMPLATE_URI = 'ui://widget/black.html';
 const BLACK_TEMPLATE_FILENAME = 'black.html';
@@ -61,25 +80,40 @@ export class McpService implements OnModuleInit, OnModuleDestroy {
   private typesModule?: McpTypesModule;
 
   private server?: McpServerInstance;
-  private readonly sessions = new Map<string, McpSseInstance>();
+  private readonly sessions = new Map<string, SessionEntry>();
   private blackTemplate?: string;
   private blackScript?: string;
   private currentTitle = 'Loading…';
+  private homeflowAdapter?: HomeflowMcpAdapter;
+  private homeflowTools: Tool[] = [];
+  private homeflowToolNames = new Set<string>();
+  private homeflowResources: Resource[] = [];
+  private homeflowResourceTemplates: ResourceTemplate[] = [];
+
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly oauthService: OauthService,
+  ) {}
 
   async onModuleInit(): Promise<void> {
     await this.loadSdk();
     await this.loadTemplate();
-    this.registerHandlers();
+    await this.registerHandlers();
   }
 
   async onModuleDestroy(): Promise<void> {
     await Promise.allSettled(
-      [...this.sessions.values()].map((session) => session.close()),
+      [...this.sessions.values()].map((session) => session.transport.close()),
     );
     this.sessions.clear();
   }
 
-  async handleSse(_req: Request, res: Response): Promise<void> {
+  async handleSse(
+    _req: Request,
+    res: Response,
+    token: VerifiedGoogleAccessToken,
+    metadataUrl: string,
+  ): Promise<void> {
     const server = this.ensureServer();
     const SseCtor = this.ensureSseCtor();
 
@@ -91,7 +125,12 @@ export class McpService implements OnModuleInit, OnModuleDestroy {
     await server.connect(transport);
 
     const sessionId = transport.sessionId;
-    this.sessions.set(sessionId, transport);
+    this.sessions.set(sessionId, {
+      transport,
+      subject: token.subject,
+      metadataUrl,
+      token,
+    });
 
     transport.onclose = () => {
       this.sessions.delete(sessionId);
@@ -104,50 +143,106 @@ export class McpService implements OnModuleInit, OnModuleDestroy {
       this.sessions.delete(sessionId);
     };
 
-    this.logger.debug(`MCP session established: ${sessionId}`);
+    this.logger.debug(
+      `MCP session established: ${sessionId} (subject: ${token.subject})`,
+    );
+
+    try {
+      await this.refreshGoogleAccount(this.sessions.get(sessionId)!);
+    } catch (error) {
+      this.logger.error(
+        `[OAuth] Failed to prime Google account context for session ${sessionId}`,
+        error as Error,
+      );
+    }
   }
 
   async handlePost(
     sessionId: string | undefined,
     req: Request,
     res: Response,
+    token: VerifiedGoogleAccessToken,
   ): Promise<void> {
     if (!sessionId) {
       res.status(400).json({ error: 'Missing sessionId query parameter' });
       return;
     }
 
-    const transport = this.sessions.get(sessionId);
-    if (!transport) {
+    const session = this.sessions.get(sessionId);
+    if (!session) {
       res.status(404).json({ error: `Unknown session ${sessionId}` });
       return;
     }
 
     res.setHeader('Access-Control-Allow-Origin', '*');
 
-    try {
-      await transport.handlePostMessage(req, res);
+    if (session.subject !== token.subject) {
+      const challenge = this.oauthService.buildChallenge(
+        session.metadataUrl,
+        'invalid_token',
+        'Token subject does not match session',
+      );
+      res.setHeader('WWW-Authenticate', challenge);
+      res
+        .status(401)
+        .json({ error: 'invalid_token', error_description: 'Token subject does not match session' });
       return;
-    } catch (error) {
-      const message = (error as Error)?.message ?? '';
-      if (/stream is not readable/i.test(message)) {
-        try {
-          const rawBody = this.extractBodyFromRequest(req);
-          if (rawBody) {
-            await transport.handleMessage(JSON.parse(rawBody));
-            if (!res.headersSent) {
-              res.status(202).send('Accepted');
-            }
-            return;
-          }
-        } catch (fallbackError) {
-          this.logger.error(
-            `Failed to recover MCP POST for session ${sessionId}: ${(fallbackError as Error).message}`,
-            (fallbackError as Error).stack,
-          );
-        }
-      }
+    }
 
+    session.subject = token.subject;
+    session.token = token;
+
+    const rawBody = this.extractBodyFromRequest(req);
+    if (rawBody) {
+      try {
+        const message = JSON.parse(rawBody) as Record<string, unknown>;
+        if (
+          message &&
+          typeof message === 'object' &&
+          message['method'] === 'tools/call' &&
+          message['params'] &&
+          typeof message['params'] === 'object'
+        ) {
+          const params = message['params'] as Record<string, unknown>;
+          const toolName = typeof params.name === 'string' ? params.name : undefined;
+          if (toolName === 'google-account') {
+            try {
+              await this.refreshGoogleAccount(session);
+            } catch (error) {
+              this.logger.error(
+                '[OAuth] Failed to refresh Google account profile',
+                error as Error,
+              );
+            }
+          }
+          const meta = params._meta && typeof params._meta === 'object' ? params._meta : {};
+          message['params'] = {
+            ...params,
+            _meta: { ...(meta as Record<string, unknown>), sessionId },
+          };
+        }
+        await session.transport.handleMessage(message);
+        if (!res.headersSent) {
+          res.status(202).send('Accepted');
+        }
+        return;
+      } catch (error) {
+        this.logger.error(
+          `Failed to process MCP message for session ${sessionId}`,
+          error as Error,
+        );
+        if (!res.headersSent) {
+          res
+            .status(400)
+            .json({ error: 'invalid_request', error_description: 'Invalid MCP payload' });
+        }
+        return;
+      }
+    }
+
+    try {
+      await session.transport.handlePostMessage(req, res);
+    } catch (error) {
       this.logger.error(
         `Failed to handle MCP POST for session ${sessionId}`,
         (error as Error).stack,
@@ -209,6 +304,8 @@ export class McpService implements OnModuleInit, OnModuleDestroy {
       { name: 'ui-mcp-server', version: '0.1.0' },
       { capabilities: { tools: {}, resources: {} } },
     );
+
+    this.homeflowAdapter = new HomeflowMcpAdapter(this.prismaService.prisma);
   }
 
   private async loadTemplate(): Promise<void> {
@@ -255,15 +352,16 @@ export class McpService implements OnModuleInit, OnModuleDestroy {
     this.blackScript = undefined;
   }
 
-  private registerHandlers(): void {
+  private async registerHandlers(): Promise<void> {
     const server = this.ensureServer();
     const types = this.ensureTypesModule();
+    await this.refreshHomeflowMetadata();
 
     server.setRequestHandler(
       types.ListToolsRequestSchema,
       async (_req: ListToolsRequest) => {
         this.logger.debug('[MCP] list_tools');
-        return { tools: [this.describeTool()] };
+        return { tools: [this.describeTool(), ...this.homeflowTools] };
       },
     );
 
@@ -271,7 +369,9 @@ export class McpService implements OnModuleInit, OnModuleDestroy {
       types.ListResourcesRequestSchema,
       async (_req: ListResourcesRequest) => {
         this.logger.debug('[MCP] list_resources');
-        return { resources: [this.describeResource()] };
+        return {
+          resources: [this.describeResource(), ...this.homeflowResources],
+        };
       },
     );
 
@@ -279,7 +379,12 @@ export class McpService implements OnModuleInit, OnModuleDestroy {
       types.ListResourceTemplatesRequestSchema,
       async (_req: ListResourceTemplatesRequest) => {
         this.logger.debug('[MCP] list_resource_templates');
-        return { resourceTemplates: [this.describeResourceTemplate()] };
+        return {
+          resourceTemplates: [
+            this.describeResourceTemplate(),
+            ...this.homeflowResourceTemplates,
+          ],
+        };
       },
     );
 
@@ -288,36 +393,70 @@ export class McpService implements OnModuleInit, OnModuleDestroy {
       async (req: ReadResourceRequest) => {
         this.logger.debug(`[MCP] read_resource: ${req.params.uri}`);
         const uri = req.params.uri;
-        if (!uri || !uri.startsWith(BLACK_TEMPLATE_URI)) {
-          throw new Error(`Unknown resource: ${uri}`);
+        if (uri && uri.startsWith(BLACK_TEMPLATE_URI)) {
+          const html = await this.renderBlackHtml({ title: this.currentTitle });
+          const meta = {
+            ...BLACK_WIDGET_META,
+            widgetData: { title: this.currentTitle },
+          };
+          return {
+            contents: [
+              {
+                uri,
+                mimeType: 'text/html+skybridge',
+                text: html,
+                _meta: meta,
+              },
+            ],
+          };
         }
-        const html = await this.renderBlackHtml({ title: this.currentTitle });
-        const meta = {
-          ...BLACK_WIDGET_META,
-          widgetData: { title: this.currentTitle },
-        };
-        return {
-          contents: [
-            {
-              uri,
-              mimeType: 'text/html+skybridge',
-              text: html,
-              _meta: meta,
-            },
-          ],
-        };
+        if (uri && uri.startsWith(HOMEFLOW_TEMPLATE_URI)) {
+          const adapter = this.homeflowAdapter;
+          if (!adapter) {
+            throw new Error('HomeFlow adapter not ready');
+          }
+          const { html, config } = await adapter.readResource();
+          const meta = { ...HOMEFLOW_WIDGET_META, widgetData: config };
+          return {
+            contents: [
+              {
+                uri,
+                mimeType: 'text/html+skybridge',
+                text: html,
+                _meta: meta,
+              },
+            ],
+          };
+        }
+        throw new Error(`Unknown resource: ${uri}`);
       },
     );
 
     server.setRequestHandler(
       types.CallToolRequestSchema,
       async (req: CallToolRequest) => {
-        if (req.params.name !== TOOL_NAME) {
-          throw new Error(`Unknown tool: ${req.params.name}`);
+        const toolName = req.params.name;
+        try {
+          this.logger.debug(
+            `[MCP] call_tool: ${toolName} args=${JSON.stringify(req.params.arguments)}`,
+          );
+        } catch {
+          this.logger.debug(`[MCP] call_tool: ${toolName} (arguments not serializable)`);
         }
-        const title = this.extractTitle(req.params.arguments);
-        this.currentTitle = title;
-        return this.buildToolResponse(title);
+        if (toolName === TOOL_NAME) {
+          const title = this.extractTitle(req.params.arguments);
+          this.currentTitle = title;
+          return this.buildToolResponse(title);
+        }
+
+        if (this.homeflowToolNames.has(toolName)) {
+          const adapter = this.homeflowAdapter;
+          if (!adapter) {
+            throw new Error('HomeFlow adapter not ready');
+          }
+          return adapter.handleTool(toolName, req.params.arguments);
+        }
+        throw new Error(`Unknown tool: ${toolName}`);
       },
     );
   }
@@ -424,6 +563,73 @@ export class McpService implements OnModuleInit, OnModuleDestroy {
         _meta: meta,
       },
     };
+  }
+
+  private async refreshGoogleAccount(session: SessionEntry): Promise<void> {
+    const token = session.token;
+    const baseAccount = {
+      subject: token.subject,
+      name: typeof token.claims['name'] === 'string' ? (token.claims['name'] as string) : undefined,
+      email: typeof token.claims.email === 'string' ? (token.claims.email as string) : undefined,
+      picture:
+        typeof token.claims['picture'] === 'string'
+          ? (token.claims['picture'] as string)
+          : undefined,
+    };
+    this.homeflowAdapter?.setAccountContext(baseAccount);
+    this.logger.debug(
+      `[Homeflow] Account context updated from token for ${baseAccount.email ?? baseAccount.subject}`,
+    );
+    try {
+      const response = await fetch(GOOGLE_USERINFO_ENDPOINT, {
+        headers: {
+          Authorization: `Bearer ${token.token}`,
+          Accept: 'application/json',
+        },
+      });
+      if (!response.ok) {
+        this.logger.warn(
+          `[OAuth] Google userinfo returned ${response.status} for subject ${token.subject}`,
+        );
+        return;
+      }
+      const payload = (await response.json()) as Record<string, unknown>;
+      const account = {
+        subject: token.subject,
+        name:
+          typeof payload.name === 'string' && payload.name.trim().length > 0
+            ? payload.name
+            : baseAccount.name,
+        email:
+          typeof payload.email === 'string' && payload.email.trim().length > 0
+            ? payload.email
+            : baseAccount.email,
+        picture:
+          typeof payload.picture === 'string' && payload.picture.trim().length > 0
+            ? payload.picture
+            : baseAccount.picture,
+      };
+      this.homeflowAdapter?.setAccountContext(account);
+      this.logger.debug(
+        `[Homeflow] Account context refreshed from Google userinfo for ${account.email ?? account.subject}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `[OAuth] Failed to fetch Google user info for subject ${session.subject}`,
+        error as Error,
+      );
+    }
+  }
+
+  private async refreshHomeflowMetadata(): Promise<void> {
+    if (!this.homeflowAdapter) return;
+    this.homeflowTools = await this.homeflowAdapter.listTools();
+    this.homeflowToolNames = new Set(
+      this.homeflowTools.map((tool) => tool.name),
+    );
+    this.homeflowResources = await this.homeflowAdapter.listResources();
+    this.homeflowResourceTemplates =
+      await this.homeflowAdapter.listResourceTemplates();
   }
 
   private ensureServer(): McpServerInstance {

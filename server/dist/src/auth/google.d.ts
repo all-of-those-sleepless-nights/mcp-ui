@@ -1,0 +1,30 @@
+export type TokenInfoResponse = {
+    aud?: string;
+    exp?: string;
+    expires_in?: string;
+    scope?: string;
+    sub?: string;
+    email?: string;
+    azp?: string;
+    [key: string]: unknown;
+};
+export type VerifiedGoogleAccessToken = {
+    token: string;
+    subject: string;
+    clientId?: string;
+    scopes: string[];
+    expiresAt: number;
+    claims: TokenInfoResponse;
+};
+export declare const GOOGLE_OAUTH_CLIENT_ID: string;
+export declare const GOOGLE_OAUTH_CLIENT_SECRET: string;
+export declare const GOOGLE_TOKEN_ENDPOINT_AUTH_METHOD = "client_secret_post";
+export declare const GOOGLE_AUTHORIZATION_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth";
+export declare const GOOGLE_TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
+export declare const GOOGLE_JWKS_URI = "https://www.googleapis.com/oauth2/v3/certs";
+export declare const GOOGLE_OPENID_ISSUER = "https://accounts.google.com";
+export declare const GOOGLE_USERINFO_ENDPOINT = "https://openidconnect.googleapis.com/v1/userinfo";
+export declare function verifyGoogleAccessToken(token: string): Promise<VerifiedGoogleAccessToken | null>;
+export declare function clearTokenCache(): void;
+export declare function getRequiredScopes(): readonly string[];
+export declare function buildWwwAuthenticateHeader(metadataUrl: string, error?: string, description?: string, realm?: string): string;

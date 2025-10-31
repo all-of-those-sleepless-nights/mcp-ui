@@ -16,6 +16,7 @@ exports.ReviewsController = void 0;
 const common_1 = require("@nestjs/common");
 const create_review_dto_1 = require("./dto/create-review.dto");
 const update_review_dto_1 = require("./dto/update-review.dto");
+const rate_job_dto_1 = require("./dto/rate-job.dto");
 const reviews_service_1 = require("./reviews.service");
 let ReviewsController = class ReviewsController {
     constructor(reviewsService) {
@@ -23,6 +24,9 @@ let ReviewsController = class ReviewsController {
     }
     create(dto) {
         return this.reviewsService.create(dto);
+    }
+    rateJob(dto) {
+        return this.reviewsService.rateJob(dto);
     }
     findAll() {
         return this.reviewsService.findAll();
@@ -45,6 +49,13 @@ __decorate([
     __metadata("design:paramtypes", [create_review_dto_1.CreateReviewDto]),
     __metadata("design:returntype", void 0)
 ], ReviewsController.prototype, "create", null);
+__decorate([
+    (0, common_1.Post)('rate-job'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [rate_job_dto_1.RateJobDto]),
+    __metadata("design:returntype", void 0)
+], ReviewsController.prototype, "rateJob", null);
 __decorate([
     (0, common_1.Get)(),
     __metadata("design:type", Function),

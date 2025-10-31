@@ -59,6 +59,14 @@ export declare class ReviewsService {
         id: number;
         bookingId: number | null;
     }>;
+    rateJob(dto: {
+        jobId: number;
+        rating: number;
+        review?: string;
+    }): Promise<{
+        readonly success: true;
+    }>;
+    private refreshProRatings;
     findAll(): Promise<({
         user: {
             createdAt: Date;

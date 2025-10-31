@@ -11,6 +11,7 @@ import {
 
 import { CreateReviewDto } from './dto/create-review.dto';
 import { UpdateReviewDto } from './dto/update-review.dto';
+import { RateJobDto } from './dto/rate-job.dto';
 import { ReviewsService } from './reviews.service';
 
 @Controller('reviews')
@@ -20,6 +21,11 @@ export class ReviewsController {
   @Post()
   create(@Body() dto: CreateReviewDto) {
     return this.reviewsService.create(dto);
+  }
+
+  @Post('rate-job')
+  rateJob(@Body() dto: RateJobDto) {
+    return this.reviewsService.rateJob(dto);
   }
 
   @Get()
@@ -33,10 +39,7 @@ export class ReviewsController {
   }
 
   @Patch(':id')
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateReviewDto,
-  ) {
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateReviewDto) {
     return this.reviewsService.update(id, dto);
   }
 

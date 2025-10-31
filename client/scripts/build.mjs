@@ -6,18 +6,20 @@ import { fileURLToPath } from 'url';
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(dirname, '..');
 const distDir = path.resolve(projectRoot, 'dist');
-const srcEntry = path.resolve(projectRoot, 'src', 'index.ts');
-const templatePath = path.resolve(projectRoot, 'templates', 'black.html');
+const templateNames = ['black.html', 'homeflow.html', 'homeflow.js'];
+const templatePaths = templateNames.map((name) => path.resolve(projectRoot, 'templates', name));
 
 async function ensureCleanDist() {
   await rm(distDir, { recursive: true, force: true });
   await mkdir(distDir, { recursive: true });
 }
 
-async function bundleScript() {
+async function bundleBlackWidget() {
+  const entry = path.resolve(projectRoot, 'src', 'index.ts');
+  const outfile = path.resolve(distDir, 'black.js');
   await build({
-    entryPoints: [srcEntry],
-    outfile: path.resolve(distDir, 'black.js'),
+    entryPoints: [entry],
+    outfile,
     bundle: true,
     format: 'esm',
     platform: 'browser',
@@ -27,14 +29,19 @@ async function bundleScript() {
   });
 }
 
-async function copyTemplate() {
-  const template = await readFile(templatePath, 'utf8');
-  await writeFile(path.resolve(distDir, 'black.html'), template, 'utf8');
+async function copyTemplates() {
+  await Promise.all(
+    templatePaths.map(async (templatePath, index) => {
+      const content = await readFile(templatePath, 'utf8');
+      await writeFile(path.resolve(distDir, templateNames[index]), content, 'utf8');
+    }),
+  );
 }
 
 async function run() {
   await ensureCleanDist();
-  await Promise.all([bundleScript(), copyTemplate()]);
+  await bundleBlackWidget();
+  await copyTemplates();
 }
 
 run().catch((error) => {

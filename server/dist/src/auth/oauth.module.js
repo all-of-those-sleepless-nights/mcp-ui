@@ -6,20 +6,18 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.McpModule = void 0;
+exports.OauthModule = void 0;
 const common_1 = require("@nestjs/common");
-const prisma_module_1 = require("../prisma/prisma.module");
-const oauth_module_1 = require("../auth/oauth.module");
-const mcp_controller_1 = require("./mcp.controller");
-const mcp_service_1 = require("./mcp.service");
-let McpModule = class McpModule {
+const oauth_controller_1 = require("./oauth.controller");
+const oauth_service_1 = require("./oauth.service");
+let OauthModule = class OauthModule {
 };
-exports.McpModule = McpModule;
-exports.McpModule = McpModule = __decorate([
+exports.OauthModule = OauthModule;
+exports.OauthModule = OauthModule = __decorate([
     (0, common_1.Module)({
-        imports: [prisma_module_1.PrismaModule, oauth_module_1.OauthModule],
-        controllers: [mcp_controller_1.McpController],
-        providers: [mcp_service_1.McpService],
+        controllers: [oauth_controller_1.OauthController],
+        providers: [oauth_service_1.OauthService],
+        exports: [oauth_service_1.OauthService],
     })
-], McpModule);
-//# sourceMappingURL=mcp.module.js.map
+], OauthModule);
+//# sourceMappingURL=oauth.module.js.map

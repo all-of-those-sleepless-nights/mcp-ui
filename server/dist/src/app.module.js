@@ -13,6 +13,7 @@ const app_controller_1 = require("./app.controller");
 const app_service_1 = require("./app.service");
 const bookings_module_1 = require("./bookings/bookings.module");
 const mcp_module_1 = require("./mcp/mcp.module");
+const oauth_module_1 = require("./auth/oauth.module");
 const prisma_module_1 = require("./prisma/prisma.module");
 const pros_module_1 = require("./pros/pros.module");
 const reviews_module_1 = require("./reviews/reviews.module");
@@ -29,6 +30,7 @@ exports.AppModule = AppModule = __decorate([
             config_1.ConfigModule.forRoot({ isGlobal: true }),
             prisma_module_1.PrismaModule,
             mcp_module_1.McpModule,
+            oauth_module_1.OauthModule,
             services_module_1.ServicesModule,
             pros_module_1.ProsModule,
             bookings_module_1.BookingsModule,
